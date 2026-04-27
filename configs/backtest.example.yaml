@@ -1,0 +1,24 @@
+# Example backtest config — loaded by a future `tradingplatform backtest --config <path>` command.
+mode: backtest
+strategy:
+  type: sma_cross
+  fast: 10
+  slow: 30
+
+universe:
+  - { symbol: SPY,  mic: XNYS, currency: USD }
+  - { symbol: QQQ,  mic: XNAS, currency: USD }
+  - { symbol: IWDA, mic: XAMS, currency: EUR }
+  - { symbol: VAS,  mic: XASX, currency: AUD }
+  - { symbol: EIMI, mic: XLON, currency: USD }
+
+period:
+  start: 2022-01-01
+  end:   2024-12-31
+
+sim:
+  starting_cash: 100000
+  slippage_bps: 2
+  fee_per_share: 0.005
+  fee_min: 1.00
+  latency_bars: 0

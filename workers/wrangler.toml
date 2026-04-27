@@ -1,0 +1,37 @@
+name = "simtrader"
+main = "src/index.ts"
+compatibility_date = "2024-05-29"
+compatibility_flags = ["nodejs_compat"]
+account_id = "f999794776f99de37612b4abbfbfc21a"
+
+# Vars available in all environments (non-secret)
+[vars]
+ENVIRONMENT = "development"
+
+# KV namespace for sessions
+# Run `make workers-kv-create` to create these and paste the IDs below.
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
+
+# Secrets — set via `wrangler secret put <NAME>` (never put in this file):
+#   DATABASE_URL          — postgresql://user:pass@host:5432/db
+#   TOKEN_ENCRYPTION_KEY  — 64 hex chars (32 random bytes), for Saxo token AES-256-GCM
+
+[env.staging]
+name = "simtrader-staging"
+vars = { ENVIRONMENT = "staging" }
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_STAGING_KV_NAMESPACE_ID"
+preview_id = "REPLACE_WITH_STAGING_KV_PREVIEW_NAMESPACE_ID"
+
+[env.production]
+name = "simtrader-production"
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"

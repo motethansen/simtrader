@@ -1,0 +1,4 @@
+# Copy to .dev.vars for local wrangler dev (never commit .dev.vars)
+DATABASE_URL=postgresql://tp:tp@localhost:5432/tradingplatform
+TOKEN_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+ENVIRONMENT=development

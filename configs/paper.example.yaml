@@ -1,0 +1,18 @@
+# Example paper-trading config — loaded by `tradingplatform paper --config <path>`.
+mode: paper
+broker: ibkr  # or 'saxo'
+
+risk:
+  max_qty_per_symbol: 1000
+  max_notional_per_order: 50000
+  max_orders_per_minute: 30
+  max_daily_loss: 2000
+
+universe:
+  - { symbol: SPY, mic: XNYS, currency: USD }
+  - { symbol: AAPL, mic: XNAS, currency: USD }
+
+strategy:
+  type: sma_cross
+  fast: 10
+  slow: 30

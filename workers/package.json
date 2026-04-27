@@ -1,0 +1,20 @@
+{
+  "name": "simtrader-workers",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy --env production",
+    "deploy:staging": "wrangler deploy --env staging",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "hono": "^4.4.0",
+    "postgres": "^3.4.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240529.0",
+    "typescript": "^5.4.5",
+    "wrangler": "^3.60.0"
+  }
+}

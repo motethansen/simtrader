@@ -1,0 +1,69 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tradingplatform"
+version = "0.1.0"
+description = "Multi-broker simulation and (eventually) execution platform — Saxo + IBKR."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "Michael" }]
+
+dependencies = [
+  "pydantic>=2.6",
+  "pydantic-settings>=2.2",
+  "typer>=0.12",
+  "rich>=13.7",
+  "httpx>=0.27",
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "PyYAML>=6.0",
+  "structlog>=24.1",
+  "python-dateutil>=2.9",
+  "sqlalchemy>=2.0",
+  "alembic>=1.13",
+  "psycopg[binary]>=3.1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.1",
+  "pytest-asyncio>=0.23",
+  "hypothesis>=6.100",
+  "ruff>=0.4",
+  "mypy>=1.10",
+]
+brokers = [
+  # IBKR via TWS / IB Gateway. Pinned loosely; not required for sim/backtest.
+  "ib_insync>=0.9.86",
+]
+api = [
+  "fastapi>=0.111",
+  "uvicorn>=0.30",
+]
+
+[project.scripts]
+tradingplatform = "tradingplatform.cli.main:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tradingplatform"]
+
+[tool.pytest.ini_options]
+addopts = "-q"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
