@@ -33,7 +33,8 @@ Two milestone tracks:
 | M6 — DO Functions tier | Infra | 🔲 Not started | Part of W2 |
 | M7 — Risk + OMS hardening | Engine | 🔲 Not started | Awaiting M5 |
 | M8 — Execution Agent | Engine | 🔲 Not started | Awaiting M7 |
-| M9 — Research Agent | Engine | 🔲 Not started | Awaiting M8 |
+| M9a — Research push/pull surface | Engine | 🔄 In progress | Sprint 03 — Worker API + migrations |
+| M9 — Research Agent (full) | Engine | 🔲 Not started | Awaiting M8, M9a |
 | M10 — Optional live trading | Engine | 🔲 Not started | Awaiting M9 |
 | M10 — Optional live | 🔲 Not started | Awaiting M9 |
 
@@ -125,6 +126,17 @@ Tests require the package installed: `pip install -e ".[dev]"` then `pytest`.
 ---
 
 ## Sprint log
+
+### Sprint 03 — M9a Research Engine (in progress, 2026-05-13)
+- Spec: `.scrum/sprint-03-research-engine.md`
+- Deliverables:
+  - Migrations 0010–0015 (`engine_api_keys`, `research_signals`, `research_instruments`, `research_evaluations`, `signal_actions`, `bridge_jwt_identities`)
+  - `workers/src/lib/sso-jwt.ts` — Bridge JWT verifier (RS256 + ES256, JWKS cache)
+  - `workers/src/middleware/research-auth.ts` — Dual-auth: engine key OR bridge JWT OR session
+  - `workers/src/routes/research/` — 5 route files: keys, signals, evaluations, instruments, portfolio-context
+  - `src/tradingplatform/research/` — Python module: models, scoring, client
+  - `tests/research_engine/` — 26 new pytest tests (models + scoring)
+- Tests: 26 new passing (13 model, 13 scoring); total suite 39+ green
 
 ### Sprint 01 — M1 Backtester (planned)
 - Planned: see `.scrum/sprint-01.md`

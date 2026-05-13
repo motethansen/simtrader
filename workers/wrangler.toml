@@ -7,6 +7,9 @@ account_id = "f999794776f99de37612b4abbfbfc21a"
 # Vars available in all environments (non-secret)
 [vars]
 ENVIRONMENT = "development"
+# Research engine (M9a) — override per environment
+SSO_AUDIENCE = "simtrader"
+SSO_JWKS_URL = ""   # placeholder; set to urbanlife.works JWKS URL in staging/prod
 
 # KV namespace for sessions
 # Run `make workers-kv-create` to create these and paste the IDs below.
@@ -18,10 +21,11 @@ preview_id = "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
 # Secrets — set via `wrangler secret put <NAME>` (never put in this file):
 #   DATABASE_URL          — postgresql://user:pass@host:5432/db
 #   TOKEN_ENCRYPTION_KEY  — 64 hex chars (32 random bytes), for Saxo token AES-256-GCM
+#   SSO_JWKS_URL          — JWKS endpoint of urbanlife.works SSO (M9a, if SSO_JWKS_URL not set in vars)
 
 [env.staging]
 name = "simtrader-staging"
-vars = { ENVIRONMENT = "staging" }
+vars = { ENVIRONMENT = "staging", SSO_AUDIENCE = "simtrader", SSO_JWKS_URL = "https://auth.urbanlife.works/.well-known/jwks.json" }
 
 [[env.staging.kv_namespaces]]
 binding = "KV"
@@ -30,7 +34,7 @@ preview_id = "REPLACE_WITH_STAGING_KV_PREVIEW_NAMESPACE_ID"
 
 [env.production]
 name = "simtrader-production"
-vars = { ENVIRONMENT = "production" }
+vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_JWKS_URL = "https://auth.urbanlife.works/.well-known/jwks.json" }
 
 [[env.production.kv_namespaces]]
 binding = "KV"

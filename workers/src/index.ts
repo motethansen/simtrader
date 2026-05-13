@@ -9,6 +9,7 @@ import authRoutes from './routes/auth'
 import adminDashboard from './routes/admin/index'
 import adminUsers from './routes/admin/users'
 import adminAuditLog from './routes/admin/audit-log'
+import researchRoutes from './routes/research/index'
 
 import { dashboardPage } from './ui/dashboard'
 
@@ -65,6 +66,9 @@ app.use('/admin/*', async (c, next) => {
 app.route('/admin', adminDashboard)
 app.route('/admin/users', adminUsers)
 app.route('/admin/audit', adminAuditLog)
+
+// ---- Research API (M9a) ----
+app.route('/research', researchRoutes)
 
 // Simple system health stub (full implementation in a later sprint)
 app.get('/admin/system', requireAdmin, async (c) => {
