@@ -8,9 +8,14 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Read DB URL from env (same var the Python app uses, but without the +psycopg driver prefix)
-_raw = os.environ.get("TP_DB_URL", "postgresql://tp:tp@localhost:5432/tradingplatform")
-db_url = _raw.replace("postgresql+psycopg://", "postgresql://")
+# Read DB URL from env (same var the Python app uses). psycopg 3 is the only driver in
+# pyproject, so normalise bare postgresql:// URLs onto it rather than falling back to psycopg2.
+_raw = os.environ.get("TP_DB_URL", "postgresql+psycopg://tp:tp@localhost:5432/tradingplatform")
+db_url = (
+    _raw
+    if _raw.startswith("postgresql+")
+    else _raw.replace("postgresql://", "postgresql+psycopg://", 1)
+)
 config.set_main_option("sqlalchemy.url", db_url)
 
 target_metadata = None
