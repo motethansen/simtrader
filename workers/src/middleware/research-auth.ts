@@ -1,7 +1,7 @@
 // Dual-auth middleware for the research API (M9a).
 // Accepts either:
 //   (a) Engine API key — "Authorization: Bearer sk_<64hex>"
-//   (b) Bridge JWT    — "Authorization: Bearer <jwt>" from urbanlife.works SSO
+//   (b) ID token      — "Authorization: Bearer <jwt>" from a trusted issuer (BudgetApp)
 //   (c) Session cookie — for user-facing endpoints (signal actions)
 //
 // Sets context vars: authMethod, userId?, apiKeyId?, bridgeSub?, researchScopes.
@@ -10,7 +10,8 @@ import { createMiddleware } from 'hono/factory'
 import type { Env, HonoVars } from '../lib/types'
 import { getDb } from '../lib/db'
 import { validateSession } from '../lib/session'
-import { verifyBridgeJwt } from '../lib/sso-jwt'
+import { verifyIdToken } from '../lib/sso-jwt'
+import { issuerConfigFor, unverifiedIssuer } from '../lib/issuers'
 import { getCookie } from 'hono/cookie'
 
 const ENGINE_KEY_PREFIX = 'sk_'
@@ -64,55 +65,50 @@ export const requireResearchAuth = createMiddleware<{ Bindings: Env; Variables: 
         return c.json({ error: 'Invalid or revoked engine API key' }, 401)
       }
 
-      // --- Bridge JWT path (contains dots = JWT shape) ---
-      if (bearer.includes('.') && c.env.SSO_JWKS_URL) {
-        const claims = await verifyBridgeJwt(bearer, c.env.SSO_JWKS_URL, c.env.SSO_AUDIENCE)
-        if (claims) {
-          const sql = getDb(c.env)
-          try {
-            // Look up or auto-provision simtrader user
-            const identRows = await sql<{ userId: string }[]>`
-              SELECT user_id FROM bridge_jwt_identities
-              WHERE iss = ${claims.iss} AND sub = ${claims.sub}
-              LIMIT 1
-            `
-            let userId: string
+      // --- ID token path (contains dots = JWT shape) ---
+      if (bearer.includes('.')) {
+        // The token names its issuer, but that only selects a trusted config — it never
+        // supplies the JWKS URL, the algorithm or the audience.
+        const iss = unverifiedIssuer(bearer)
+        const issuerConfig = iss ? issuerConfigFor(c.env, iss) : null
+        if (!issuerConfig) return c.json({ error: 'Unknown token issuer' }, 401)
 
-            if (identRows[0]) {
-              userId = identRows[0].userId
-              // Update last_seen_at fire-and-forget
-              sql`UPDATE bridge_jwt_identities SET last_seen_at = NOW(), email = ${claims.email ?? null}
-                  WHERE iss = ${claims.iss} AND sub = ${claims.sub}`
-                .then(() => {}).catch(() => {})
-            } else {
-              // Auto-provision: create user with password_hash NULL (cannot log in directly)
-              const newUser = await sql<{ id: string }[]>`
-                INSERT INTO users (email, password_hash, role, status)
-                VALUES (${claims.email ?? `bridge_${claims.sub}@sso`}, NULL, 'user', 'active')
-                ON CONFLICT (email) DO UPDATE SET updated_at = NOW()
-                RETURNING id
-              `
-              userId = newUser[0]!.id
-              await sql`
-                INSERT INTO bridge_jwt_identities (user_id, iss, sub, email)
-                VALUES (${userId}, ${claims.iss}, ${claims.sub}, ${claims.email ?? null})
-                ON CONFLICT (iss, sub) DO UPDATE SET last_seen_at = NOW()
-              `
-            }
+        const result = await verifyIdToken(bearer, issuerConfig)
+        if (!result.ok) return c.json({ error: 'Invalid or expired token' }, 401)
+        const claims = result.claims
 
-            c.set('authMethod', 'bridge_jwt')
-            c.set('userId', userId)
-            c.set('userRole', 'user')
-            c.set('apiKeyId', null)
-            c.set('bridgeSub', claims.sub)
-            c.set('researchScopes', ['signals:read', 'signals:write', 'evaluations:read', 'evaluations:write'])
-            await next()
-            return
-          } finally {
-            await sql.end()
-          }
+        const sql = getDb(c.env)
+        try {
+          // Identity is (iss, sub) and nothing else. There is deliberately no provisioning
+          // here: an account is created only by the browser sign-in flow, which proves the
+          // person is present. Matching on email would attach a token to whichever account
+          // happens to share the address — an account takeover, admins included.
+          const identRows = await sql<{ userId: string; role: 'user' | 'admin'; status: string }[]>`
+            SELECT e.user_id, u.role, u.status
+            FROM external_identities e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.iss = ${claims.iss} AND e.sub = ${claims.sub}
+            LIMIT 1
+          `
+          const ident = identRows[0]
+          if (!ident) return c.json({ error: 'No simtrader account for this identity — sign in first' }, 403)
+          if (ident.status !== 'active') return c.json({ error: 'Account is not active' }, 403)
+
+          sql`UPDATE external_identities SET last_seen_at = NOW()
+              WHERE iss = ${claims.iss} AND sub = ${claims.sub}`
+            .then(() => {}).catch(() => {})
+
+          c.set('authMethod', 'bridge_jwt')
+          c.set('userId', ident.userId)
+          c.set('userRole', ident.role)
+          c.set('apiKeyId', null)
+          c.set('bridgeSub', claims.sub)
+          c.set('researchScopes', ['signals:read', 'signals:write', 'evaluations:read', 'evaluations:write'])
+          await next()
+          return
+        } finally {
+          await sql.end()
         }
-        return c.json({ error: 'Invalid or expired bridge JWT' }, 401)
       }
     }
 

@@ -7,16 +7,22 @@ account_id = "f999794776f99de37612b4abbfbfc21a"
 # Vars available in all environments (non-secret)
 [vars]
 ENVIRONMENT = "development"
-# Research engine (M9a) — override per environment
+# BudgetApp sign-in (ST-008). BudgetApp is the only identity provider; the urbanlife issuer
+# is retired. Local dev points at docker-compose BudgetApp and `wrangler dev` on :8787.
 SSO_AUDIENCE = "simtrader"
-SSO_JWKS_URL = ""   # placeholder; set to urbanlife.works JWKS URL in staging/prod
+SSO_CLIENT_ID = "simtrader"
+BUDGETAPP_ISSUER = "http://localhost:8000"
+BUDGETAPP_JWKS_URL = "http://localhost:8000/.well-known/jwks.json"
+BUDGETAPP_TOKEN_URL = "http://localhost:8000/api/v1/sso/token"
+BUDGETAPP_CONNECT_URL = "http://localhost:5173/connect"
+SIMTRADER_PUBLIC_URL = "http://localhost:8787"
 
 # KV namespace for sessions
 # Run `make workers-kv-create` to create these and paste the IDs below.
 [[kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
+id = "49f7d546350348a1b3850104dedc03f6"
+preview_id = "e262a928135941628ab88c5c062b5e1a"
 
 # Hyperdrive — reaches Postgres on vizneo-docker through a Cloudflare Tunnel gated by an
 # Access service token. Credentials live in the Hyperdrive config, not here.
@@ -25,22 +31,22 @@ binding = "HYPERDRIVE"
 id = "215c6bce4b004ad899bc8e84b1eebca0"
 
 # Secrets — set via `wrangler secret put <NAME>` (never put in this file):
-#   DATABASE_URL          — postgresql://user:pass@host:5432/db
-#   TOKEN_ENCRYPTION_KEY  — 64 hex chars (32 random bytes), for Saxo token AES-256-GCM
-#   SSO_JWKS_URL          — JWKS endpoint of urbanlife.works SSO (M9a, if SSO_JWKS_URL not set in vars)
+#   DATABASE_URL                 — fallback only; the Hyperdrive binding above is the real path
+#   TOKEN_ENCRYPTION_KEY         — 64 hex chars (32 random bytes), for Saxo token AES-256-GCM
+#   SIMTRADER_SSO_CLIENT_SECRET  — secret half of the `simtrader` client registered in BudgetApp
 
 [env.staging]
 name = "simtrader-staging"
-vars = { ENVIRONMENT = "staging", SSO_AUDIENCE = "simtrader", SSO_JWKS_URL = "https://auth.urbanlife.works/.well-known/jwks.json" }
+vars = { ENVIRONMENT = "staging", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.vizneo.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.vizneo.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.vizneo.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.vizneo.com/connect", SIMTRADER_PUBLIC_URL = "https://simtrader-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev" }
 
 [[env.staging.kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_STAGING_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_STAGING_KV_PREVIEW_NAMESPACE_ID"
+id = "de62d7ad926148d88a4583ddd2309f9a"
+preview_id = "426decefaa004fef9027697e9eceb994"
 
 [env.production]
 name = "simtrader-production"
-vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_JWKS_URL = "https://auth.urbanlife.works/.well-known/jwks.json" }
+vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.vizneo.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.vizneo.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.vizneo.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.vizneo.com/connect", SIMTRADER_PUBLIC_URL = "https://REPLACE_WITH_PRODUCTION_HOST" }
 
 [[env.production.kv_namespaces]]
 binding = "KV"

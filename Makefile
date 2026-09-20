@@ -45,11 +45,10 @@ migrate-status:
 migrate-history:
 	alembic history --verbose
 
-# Create the first admin user. Set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD in .env
+# Promote an existing user to admin by BudgetApp id. They must have signed in once first —
+# simtrader has no passwords and no sign-up of its own (ST-008).
 seed-admin:
-	tradingplatform seed-admin \
-		--email "$(SEED_ADMIN_EMAIL)" \
-		--password "$(SEED_ADMIN_PASSWORD)"
+	tradingplatform seed-admin --budgetapp-id "$(SEED_ADMIN_BUDGETAPP_ID)"
 
 # --- Workers (Cloudflare) ---
 workers-install:
@@ -64,28 +63,20 @@ workers-deploy:
 workers-deploy-staging:
 	cd workers && npx wrangler deploy --env staging
 
-# Create KV namespaces and print IDs to paste into wrangler.toml
-# Run once per environment. Requires Workers KV Storage: Edit permission on your API token.
+# Create KV namespaces and print IDs to paste into wrangler.toml.
+# The dev and staging namespaces already exist and are filled in; this is for production, or
+# for recreating them. Note the wrangler 4 syntax: `kv namespace`, not `kv:namespace`, and one
+# namespace per invocation — a "preview" namespace is just a second namespace.
 workers-kv-create:
-	@echo "=== Creating KV namespaces ==="
-	@echo "--- development preview ---"
-	cd workers && npx wrangler kv:namespace create KV --preview
-	@echo "--- development ---"
-	cd workers && npx wrangler kv:namespace create KV
-	@echo "--- staging ---"
-	cd workers && npx wrangler kv:namespace create KV --env staging
-	@echo "--- staging preview ---"
-	cd workers && npx wrangler kv:namespace create KV --env staging --preview
-	@echo "--- production ---"
-	cd workers && npx wrangler kv:namespace create KV --env production
+	cd workers && npx wrangler kv namespace create simtrader-KV-production
 	@echo ""
-	@echo "Paste the IDs printed above into workers/wrangler.toml"
+	@echo "Paste the id printed above into workers/wrangler.toml under [[env.production.kv_namespaces]]"
 
 # Push secrets to the deployed Worker (production). Run after first deploy.
 # These are read from the current environment / .env file.
 workers-secrets-put:
-	@echo "$(DATABASE_URL)" | cd workers && npx wrangler secret put DATABASE_URL --env production
 	@echo "$(TOKEN_ENCRYPTION_KEY)" | cd workers && npx wrangler secret put TOKEN_ENCRYPTION_KEY --env production
+	@echo "$(SIMTRADER_SSO_CLIENT_SECRET)" | cd workers && npx wrangler secret put SIMTRADER_SSO_CLIENT_SECRET --env production
 
 # Generate a secure 32-byte encryption key for TOKEN_ENCRYPTION_KEY
 gen-encryption-key:

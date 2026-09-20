@@ -1,18 +1,26 @@
 import type { UserRole, SessionData } from './types'
 import { generateToken } from './auth'
 
-const USER_SESSION_TTL_DAYS = 7
-const ADMIN_SESSION_TTL_DAYS = 1
+// Every session now comes from a BudgetApp sign-in, and ST-008 caps those at 24 hours for
+// users and admins alike: BudgetApp is the only door, so a suspension or deletion there has to
+// take effect within one session lifetime. The old 7-day user session outlived that guarantee.
+export const SESSION_TTL_SECONDS = 24 * 3600
+
+export interface NewSession {
+  userId: string
+  role: UserRole
+  amr: string[]
+  authTime: number
+}
 
 export async function createSession(
   kv: KVNamespace,
-  userId: string,
-  role: UserRole,
+  session: NewSession,
 ): Promise<string> {
   const token = generateToken()
-  const ttlDays = role === 'admin' ? ADMIN_SESSION_TTL_DAYS : USER_SESSION_TTL_DAYS
-  const ttlSeconds = ttlDays * 86400
-  const data: SessionData = { userId, role }
+  const ttlSeconds = SESSION_TTL_SECONDS
+  const { userId, role, amr, authTime } = session
+  const data: SessionData = { userId, role, amr, authTime }
 
   await kv.put(`session:${token}`, JSON.stringify(data), { expirationTtl: ttlSeconds })
 
@@ -32,7 +40,16 @@ export async function validateSession(
 ): Promise<SessionData | null> {
   const raw = await kv.get(`session:${token}`)
   if (!raw) return null
-  return JSON.parse(raw) as SessionData
+  const data = JSON.parse(raw) as Partial<SessionData>
+  if (!data.userId || !data.role) return null
+  // amr/authTime are absent in sessions written before ST-008; treat them as "no 2FA proven",
+  // which costs such a session nothing but admin access.
+  return {
+    userId: data.userId,
+    role: data.role,
+    amr: data.amr ?? [],
+    authTime: data.authTime ?? 0,
+  }
 }
 
 export async function destroySession(kv: KVNamespace, token: string): Promise<void> {

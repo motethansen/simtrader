@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import hashlib
 import os
-import secrets
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -75,13 +74,18 @@ def doctor() -> None:
 
 @app.command(name="seed-admin")
 def seed_admin(
-    email: str = typer.Option(..., "--email", "-e", help="Admin email address."),
-    password: str = typer.Option(..., "--password", "-p", help="Admin password (min 12 chars)."),
+    budgetapp_id: str = typer.Option(
+        ..., "--budgetapp-id", "-b", help="BudgetApp user id (the `sub` in its ID token)."
+    ),
 ) -> None:
-    """Create the first admin user in the database.
+    """Promote an existing simtrader user to admin, by BudgetApp identity.
 
-    Safe to run multiple times — skips if the email already exists.
-    Refuses to run when TP_MODE=live.
+    simtrader has no passwords: every account is created by signing in through BudgetApp
+    (ST-008). So this promotes rather than creates, and the person must have signed in at
+    least once. Safe to run repeatedly. Refuses to run when TP_MODE=live.
+
+    Admin pages additionally require that BudgetApp 2FA was used for the sign-in, so the
+    promoted account needs 2FA turned on in BudgetApp before /admin will open.
     """
     from ..config import get_settings
 
@@ -90,13 +94,6 @@ def seed_admin(
         console.print("[red]Refusing to seed admin against a live database (TP_MODE=live).[/red]")
         raise typer.Exit(code=1)
 
-    if len(password) < 12:
-        console.print("[red]Password must be at least 12 characters.[/red]")
-        raise typer.Exit(code=1)
-
-    password_hash = _hash_password(password)
-
-    # Use plain psycopg3 (no SQLAlchemy ORM) to keep this self-contained.
     try:
         import psycopg  # type: ignore[import]
     except ImportError:
@@ -107,29 +104,44 @@ def seed_admin(
     db_url = s.db_url.replace("postgresql+psycopg://", "postgresql://")
 
     with psycopg.connect(db_url) as conn:
-        existing = conn.execute("SELECT id FROM users WHERE email = %s", (email,)).fetchone()
-        if existing:
-            console.print(f"[yellow]User {email!r} already exists — skipping.[/yellow]")
+        row = conn.execute(
+            """
+            SELECT u.id, u.email, u.role
+            FROM external_identities e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.sub = %s
+            """,
+            (budgetapp_id,),
+        ).fetchone()
+
+        if row is None:
+            console.print(
+                f"[red]No simtrader user is linked to BudgetApp id {budgetapp_id!r}.[/red]"
+            )
+            console.print(
+                "[dim]Ask them to open simtrader and sign in with BudgetApp once, then re-run.[/dim]"
+            )
+            raise typer.Exit(code=1)
+
+        user_id, email, role = row
+        if role == "admin":
+            console.print(f"[yellow]{email} is already an admin — nothing to do.[/yellow]")
             return
 
         conn.execute(
+            "UPDATE users SET role = 'admin', updated_at = NOW() WHERE id = %s", (user_id,)
+        )
+        conn.execute(
             """
-            INSERT INTO users (email, password_hash, role, status, email_verified)
-            VALUES (%s, %s, 'admin', 'active', true)
+            INSERT INTO audit_log (actor_id, target_user_id, action, detail)
+            VALUES (NULL, %s, 'user.role_change', %s)
             """,
-            (email, password_hash),
+            (user_id, '{"to": "admin", "via": "seed-admin"}'),
         )
         conn.commit()
 
-    console.print(f"[green]Admin user created: {email}[/green]")
-    console.print("[dim]Log in at /admin/login[/dim]")
-
-
-def _hash_password(password: str) -> str:
-    """PBKDF2-SHA256, 600k iterations. Compatible with the Workers implementation."""
-    salt = secrets.token_bytes(16)
-    dk = hashlib.pbkdf2_hmac("sha256", password.encode(), salt, 600_000)
-    return f"pbkdf2:{salt.hex()}:{dk.hex()}"
+    console.print(f"[green]{email} is now an admin.[/green]")
+    console.print("[dim]They must have 2FA enabled in BudgetApp to open /admin.[/dim]")
 
 
 if __name__ == "__main__":

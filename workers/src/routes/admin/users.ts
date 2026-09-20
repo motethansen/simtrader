@@ -185,11 +185,12 @@ users.post('/:id/delete', async (c) => {
     await sql`
       UPDATE users SET
         email = 'deleted_' || id || '@deleted',
-        password_hash = 'deleted',
         status = 'deleted',
         updated_at = NOW()
       WHERE id = ${targetId}
     `
+    // Unlink the BudgetApp identity too, or the next sign-in would reattach to this row.
+    await sql`DELETE FROM external_identities WHERE user_id = ${targetId}`
     await destroyAllUserSessions(c.env.KV, targetId)
     await writeAudit({
       sql, actorId, targetUserId: targetId,

@@ -2,14 +2,14 @@
 
 ## What this project is
 
-A **web-based trading simulation platform** where users sign up, connect their Saxo account via a 24h API token, upload their portfolio, and run simulations — seeing their portfolio perform exactly as it would in their live Saxo account, then exploring rebalancing suggestions and historical "what if" scenarios.
+A **web-based trading simulation platform** where users sign in with their BudgetApp account, connect their Saxo account via a 24h API token, upload their portfolio, and run simulations — seeing their portfolio perform exactly as it would in their live Saxo account, then exploring rebalancing suggestions and historical "what if" scenarios.
 
 Later: AI-driven execution and research agents across US, EU, AU/ASEAN equities and ETFs.
 
 **Deployment**: hybrid cloud. Cloudflare Workers serves the web app + API (edge). DO Functions runs Python simulation work. A DigitalOcean droplet holds persistent broker sessions + OMS daemon. Managed Postgres + PgBouncer is the state of record. See ARCHITECTURE.md §10–12 for the topology diagram.
 
 **Product phases**:
-- W1: User sign-up/login + dashboard (Cloudflare Workers)
+- W1: BudgetApp sign-in + dashboard (Cloudflare Workers). **No sign-up, no passwords** — see below
 - W2: Saxo token vault — encrypted storage, proxy, TTL cleanup
 - W3: Portfolio upload + manual entry
 - W4: Live portfolio view — real prices via Saxo, trend chart
@@ -137,11 +137,30 @@ Copy `.env.example` to `.env` for local dev.
 
 ---
 
+## Sign-in: BudgetApp only (ST-008)
+
+**simtrader has no sign-up and no password login, admins included.** BudgetApp is the identity
+provider; every simtrader account is a BudgetApp account. Do not add password auth back.
+
+- Flow: OpenID Connect authorization code + PKCE (S256). It always **starts** at simtrader's
+  `/auth/budgetapp/start`, never at BudgetApp — a provider-initiated push has no `state` to check,
+  which is login CSRF.
+- Identity is **`(iss, sub)`**, stored in `external_identities`. Email is display data copied on
+  each sign-in, never a key: BudgetApp does not verify addresses, and `users.email` is not unique.
+- ID tokens are **ES256, 5 minutes**, verified against BudgetApp's JWKS. The verifier pins `alg`
+  per issuer, requires `exp`, checks `iss` exactly, and takes the JWKS URL from config, never from
+  the token (`workers/src/lib/sso-jwt.ts`, `issuers.ts`).
+- Sessions are simtrader's own KV sessions, capped at **24 h** for everyone, because BudgetApp is
+  the only door and a suspension there must take effect within one session.
+- `/admin` needs `role = 'admin'` **and** `amr` containing `otp` — BudgetApp 2FA for that sign-in.
+- `make seed-admin` promotes an existing user by BudgetApp id; it creates nobody.
+- Local testing without BudgetApp: `workers/test/README.md`.
+
 ## Multi-user + roles
 
 `users.role` ∈ `{'user', 'admin'}`. `users.status` ∈ `{'active', 'suspended', 'pending'}`.
 
-Every request goes through auth middleware that attaches `{ userId, role }` to context. Admin routes are wrapped with `requireRole('admin')` — hard 403 otherwise. Admin sessions have a shorter TTL (24h) than user sessions (7 days).
+Every request goes through auth middleware that attaches `{ userId, role }` to context, taking the role from the database on each request so a demotion is immediate. Admin routes are wrapped with `requireAdmin` — hard 403 otherwise. All sessions are 24h.
 
 `audit_log` is append-only. **Every admin action must write a row** — enforced in a wrapper function, not left to individual endpoint authors. The table has no UPDATE or DELETE at the DB role level. Retained ≥ 1 year.
 
@@ -181,7 +200,7 @@ See `.scrum/progress.md` for the full status table.
 
 | Track | Next milestone | Sprint |
 | --- | --- | --- |
-| Web product | W1 — Web foundation (sign-up, auth, dashboard) | sprint-02 |
+| Web product | W1 — Web foundation (BudgetApp sign-in, dashboard) | sprint-02 |
 | Engine | M1 — Backtester with real market data | sprint-01 |
 
 Sprints 01 and 02 can run in parallel — M1 is backend-only, W1 is Workers/frontend-only.

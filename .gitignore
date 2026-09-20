@@ -21,6 +21,8 @@ data/
 
 # Workers local dev secrets (never commit)
 workers/.dev.vars
+# Local `wrangler dev` state — holds whatever KV your dev session wrote, including session tokens
+workers/.wrangler/
 
 # Claude Code local settings (may contain secrets)
 .claude/settings.local.json

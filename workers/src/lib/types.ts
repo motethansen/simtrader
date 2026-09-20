@@ -15,6 +15,11 @@ export interface User {
 export interface SessionData {
   userId: string
   role: UserRole
+  /** Authentication methods BudgetApp reported for the sign-in behind this session.
+   *  `otp` present means 2FA was used; the admin guard requires it (ST-008 / ST-g). */
+  amr: string[]
+  /** When the BudgetApp sign-in happened, seconds since epoch. */
+  authTime: number
 }
 
 export interface AuditEntry {
@@ -39,9 +44,23 @@ export interface Env {
   DATABASE_URL: string
   TOKEN_ENCRYPTION_KEY: string
   ENVIRONMENT: string
-  // Research engine (M9a) — optional; empty string if not configured
-  SSO_JWKS_URL: string
+  // --- BudgetApp sign-in (ST-008). BudgetApp is the only identity provider. ---
+  /** Exact `iss` of BudgetApp ID tokens, e.g. https://api.budgetapp.vizneo.com */
+  BUDGETAPP_ISSUER: string
+  /** Defaults to <issuer>/.well-known/jwks.json */
+  BUDGETAPP_JWKS_URL: string
+  /** Defaults to <issuer>/api/v1/sso/token */
+  BUDGETAPP_TOKEN_URL: string
+  /** Browser-facing consent page, e.g. https://budgetapp.vizneo.com/connect */
+  BUDGETAPP_CONNECT_URL: string
+  /** simtrader's own origin, used to build the exact registered redirect_uri */
+  SIMTRADER_PUBLIC_URL: string
+  /** Audience simtrader answers to in ID tokens */
   SSO_AUDIENCE: string
+  /** OAuth client id simtrader presents to BudgetApp */
+  SSO_CLIENT_ID: string
+  /** Secret half of that client — `wrangler secret put`, never in wrangler.toml */
+  SIMTRADER_SSO_CLIENT_SECRET: string
 }
 
 // Hono context variables set by middleware
@@ -49,6 +68,8 @@ export interface HonoVars {
   userId: string
   userRole: UserRole
   userStatus: UserStatus
+  /** `amr` from the BudgetApp sign-in behind this session; `otp` means 2FA was used. */
+  authMethods: string[]
   // Set by researchAuth middleware (M9a)
   authMethod: 'session' | 'engine_key' | 'bridge_jwt'
   apiKeyId: string | null

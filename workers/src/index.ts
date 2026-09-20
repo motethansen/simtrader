@@ -21,10 +21,21 @@ app.use('*', sessionMiddleware)
 // ---- Public auth routes ----
 app.route('/auth', authRoutes)
 
-// Convenience redirects
-app.get('/', (c) => c.redirect(c.var.userId ? '/dashboard' : '/auth/login'))
-app.get('/login', (c) => c.redirect('/auth/login'))
-app.get('/signup', (c) => c.redirect('/auth/signup'))
+// Convenience redirects. There is no sign-up: an account is created on first BudgetApp
+// sign-in, so /signup goes to the same place as /login (ST-008).
+app.get('/', (c) => c.redirect(c.var.userId ? '/dashboard' : '/auth/budgetapp/start'))
+app.get('/login', (c) => c.redirect('/auth/budgetapp/start'))
+app.get('/signup', (c) => c.redirect('/auth/budgetapp/start'))
+app.get('/admin/login', (c) => c.redirect('/auth/budgetapp/start?next=%2Fadmin'))
+
+// Shown after logout, so the landing page does not bounce straight back into BudgetApp.
+app.get('/goodbye', (c) =>
+  c.html(`<!DOCTYPE html><html><body style="font-family:system-ui;max-width:480px;margin:4rem auto;padding:2rem">
+    <h2>Signed out of simtrader</h2>
+    <p>Your BudgetApp session is untouched.</p>
+    <p><a href="/auth/budgetapp/start">Sign in again</a></p>
+  </body></html>`)
+)
 
 // ---- User dashboard ----
 app.get('/dashboard', requireAuth, async (c) => {

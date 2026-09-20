@@ -20,8 +20,11 @@ export const sessionMiddleware = createMiddleware<{ Bindings: Env; Variables: Ho
           const user = rows[0]
           if (user && user.status === 'active') {
             c.set('userId', session.userId)
-            c.set('userRole', session.role)
+            // Role comes from the database, not the session copy: a demotion takes effect at
+            // once rather than at the next sign-in.
+            c.set('userRole', user.role as 'user' | 'admin')
             c.set('userStatus', 'active')
+            c.set('authMethods', session.amr)
           }
         } finally {
           await sql.end()
@@ -32,21 +35,33 @@ export const sessionMiddleware = createMiddleware<{ Bindings: Env; Variables: Ho
   }
 )
 
-// Requires an authenticated session. Redirects to /login otherwise.
+// Requires an authenticated session. Sends people to BudgetApp otherwise — the only way in.
 export const requireAuth = createMiddleware<{ Bindings: Env; Variables: HonoVars }>(
   async (c, next) => {
-    if (!c.var.userId) return c.redirect('/login')
+    if (!c.var.userId) return c.redirect(startUrlFor(c.req.path))
     await next()
   }
 )
 
-// Requires admin role. Returns 403 for non-admins.
+// Requires admin role AND that BudgetApp 2FA was used for this sign-in (ST-008 / ST-g).
+// Admin rights alone are not enough: `amr` records how the person proved who they were, and
+// BudgetApp applies the same rule to its own admins.
 export const requireAdmin = createMiddleware<{ Bindings: Env; Variables: HonoVars }>(
   async (c, next) => {
-    if (!c.var.userId) return c.redirect('/admin/login')
+    if (!c.var.userId) return c.redirect(startUrlFor(c.req.path))
     if (c.var.userRole !== 'admin') {
       return c.text('Forbidden', 403)
+    }
+    if (!(c.var.authMethods ?? []).includes('otp')) {
+      return c.text(
+        'Admin access requires two-factor authentication. Turn on 2FA in BudgetApp, sign out, and sign in again.',
+        403,
+      )
     }
     await next()
   }
 )
+
+function startUrlFor(path: string): string {
+  return `/auth/budgetapp/start?next=${encodeURIComponent(path)}`
+}
