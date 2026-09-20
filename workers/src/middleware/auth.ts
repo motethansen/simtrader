@@ -12,7 +12,7 @@ export const sessionMiddleware = createMiddleware<{ Bindings: Env; Variables: Ho
       const session = await validateSession(c.env.KV, token)
       if (session) {
         // Re-check user status from DB (catches suspension between requests)
-        const sql = getDb(c.env.DATABASE_URL)
+        const sql = getDb(c.env)
         try {
           const rows = await sql<{ status: string; role: string }[]>`
             SELECT status, role FROM users WHERE id = ${session.userId}

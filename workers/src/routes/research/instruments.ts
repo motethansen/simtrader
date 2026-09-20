@@ -12,7 +12,7 @@ const instruments = new Hono<{ Bindings: Env; Variables: HonoVars }>()
 // GET /research/instruments
 instruments.get('/', requireResearchAuth, async (c) => {
   const trackedParam = c.req.query('tracked') ?? 'true'
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     let rows
     if (trackedParam === 'all') {
@@ -49,7 +49,7 @@ instruments.post('/', requireResearchAuth, async (c) => {
   if (!symbol) return c.json({ error: 'symbol is required' }, 400)
   if (!mic) return c.json({ error: 'mic is required' }, 400)
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql`
       INSERT INTO research_instruments (symbol, mic, name, asset_class, currency)

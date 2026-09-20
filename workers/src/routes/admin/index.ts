@@ -6,7 +6,7 @@ import { adminDashboardPage } from '../../ui/admin/dashboard'
 const dashboard = new Hono<{ Bindings: Env; Variables: HonoVars }>()
 
 dashboard.get('/', async (c) => {
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const [[totals], [tokenStats], recentAudit] = await Promise.all([
       sql<{ total: number; active: number; suspended: number; activeToday: number }[]>`

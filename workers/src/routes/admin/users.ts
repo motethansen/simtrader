@@ -20,7 +20,7 @@ users.get('/', async (c) => {
   const roleFilter = c.req.query('role') ?? ''
   const statusFilter = c.req.query('status') ?? ''
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const where = sql`
       WHERE status != 'deleted'
@@ -60,7 +60,7 @@ users.get('/', async (c) => {
 // --- GET /admin/users/:id ---
 users.get('/:id', async (c) => {
   const id = c.req.param('id')
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const [userRows, auditRows, tokenRows] = await Promise.all([
       sql<{ id: string; email: string; role: string; status: string; emailVerified: boolean; createdAt: string; lastLoginAt: string | null }[]>`
@@ -98,7 +98,7 @@ users.post('/:id/suspend', async (c) => {
   const actorId = c.var.userId
   if (targetId === actorId) return c.json({ error: 'Cannot suspend yourself' }, 400)
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     await sql`UPDATE users SET status = 'suspended', updated_at = NOW() WHERE id = ${targetId}`
     await destroyAllUserSessions(c.env.KV, targetId)
@@ -115,7 +115,7 @@ users.post('/:id/suspend', async (c) => {
 // --- POST /admin/users/:id/unsuspend ---
 users.post('/:id/unsuspend', async (c) => {
   const targetId = c.req.param('id')
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     await sql`UPDATE users SET status = 'active', updated_at = NOW() WHERE id = ${targetId}`
     await writeAudit({
@@ -137,7 +137,7 @@ users.post('/:id/role', async (c) => {
   const body = await c.req.json<{ role: string }>()
   if (!['user', 'admin'].includes(body.role)) return c.json({ error: 'Invalid role' }, 400)
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const current = await sql<{ role: string }[]>`SELECT role FROM users WHERE id = ${targetId}`
     const fromRole = current[0]?.role ?? 'unknown'
@@ -157,7 +157,7 @@ users.post('/:id/role', async (c) => {
 // --- POST /admin/users/:id/token/expire ---
 users.post('/:id/token/expire', async (c) => {
   const targetId = c.req.param('id')
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     await sql`UPDATE saxo_tokens SET expires_at = NOW() WHERE user_id = ${targetId}`
     await writeAudit({
@@ -179,7 +179,7 @@ users.post('/:id/delete', async (c) => {
   const body = await c.req.json<{ confirm?: boolean }>().catch(() => ({ confirm: false }))
   if (!body.confirm) return c.json({ error: 'confirm required' }, 400)
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     // Soft-delete: anonymise email, keep audit trail intact
     await sql`

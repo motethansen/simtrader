@@ -13,7 +13,7 @@ import { requireResearchAuth } from '../../middleware/research-auth'
 const portfolioContext = new Hono<{ Bindings: Env; Variables: HonoVars }>()
 
 portfolioContext.get('/', requireResearchAuth, async (c) => {
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     // Tracked instruments are always available
     const instruments = await sql<{ symbol: string; mic: string; name: string | null }[]>`

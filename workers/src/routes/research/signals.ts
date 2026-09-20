@@ -36,7 +36,7 @@ signals.post('/', requireResearchAuth, async (c) => {
   if (parts.length !== 2) return c.json({ error: 'instrument_key must be symbol:mic' }, 400)
   const [symbol, mic] = parts as [string, string]
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql<{ id: string; createdAt: string }[]>`
       INSERT INTO research_signals
@@ -61,7 +61,7 @@ signals.get('/', requireResearchOrSession, async (c) => {
   const limit = Math.min(parseInt(c.req.query('limit') ?? '50', 10), 200)
   const before = c.req.query('before') ?? null
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql`
       SELECT id, instrument_key, symbol, mic, score, horizon, source,
@@ -84,7 +84,7 @@ signals.get('/', requireResearchOrSession, async (c) => {
 // GET /research/signals/:id
 signals.get('/:id', requireResearchOrSession, async (c) => {
   const id = c.req.param('id')
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql`
       SELECT id, instrument_key, symbol, mic, score, horizon, source,
@@ -116,7 +116,7 @@ signals.post('/:id/actions', requireResearchOrSession, async (c) => {
     return c.json({ error: `action must be one of: ${VALID_ACTIONS.join(', ')}` }, 400)
   }
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const signalRows = await sql`SELECT id FROM research_signals WHERE id = ${signalId} LIMIT 1`
     if (!signalRows[0]) return c.json({ error: 'Signal not found' }, 404)

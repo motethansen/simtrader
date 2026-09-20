@@ -39,7 +39,7 @@ keys.post('/', async (c) => {
   const keyHash = await sha256Hex(rawKey)
   const keyPrefix = rawKey.slice(0, 11) // "sk_" + 8 chars
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql<{ id: string; createdAt: string }[]>`
       INSERT INTO engine_api_keys (name, key_hash, key_prefix, scopes, expires_at)
@@ -64,7 +64,7 @@ keys.post('/', async (c) => {
 
 // GET /research/engine-keys
 keys.get('/', async (c) => {
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql`
       SELECT id, name, key_prefix, scopes, last_used_at, expires_at, revoked_at, created_at
@@ -80,7 +80,7 @@ keys.get('/', async (c) => {
 // DELETE /research/engine-keys/:id
 keys.delete('/:id', async (c) => {
   const id = c.req.param('id')
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql<{ id: string; name: string }[]>`
       UPDATE engine_api_keys SET revoked_at = NOW()

@@ -33,6 +33,9 @@ export interface AuditEntry {
 // Cloudflare Workers bindings
 export interface Env {
   KV: KVNamespace
+  // Primary database path (ST-010): Hyperdrive -> Cloudflare Tunnel -> Postgres on vizneo-docker.
+  HYPERDRIVE?: Hyperdrive
+  // Fallback for local `wrangler dev` against docker-compose Postgres.
   DATABASE_URL: string
   TOKEN_ENCRYPTION_KEY: string
   ENVIRONMENT: string

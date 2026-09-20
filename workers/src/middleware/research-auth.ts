@@ -21,8 +21,8 @@ async function sha256Hex(input: string): Promise<string> {
 }
 
 // Fire-and-forget: bump last_used_at without blocking the response.
-function bumpKeyLastUsed(databaseUrl: string, keyId: string): void {
-  const sql = getDb(databaseUrl)
+function bumpKeyLastUsed(env: Env, keyId: string): void {
+  const sql = getDb(env)
   sql`UPDATE engine_api_keys SET last_used_at = NOW() WHERE id = ${keyId}`
     .then(() => sql.end())
     .catch(() => sql.end())
@@ -38,7 +38,7 @@ export const requireResearchAuth = createMiddleware<{ Bindings: Env; Variables: 
       // --- Engine API key path ---
       if (bearer.startsWith(ENGINE_KEY_PREFIX)) {
         const hash = await sha256Hex(bearer)
-        const sql = getDb(c.env.DATABASE_URL)
+        const sql = getDb(c.env)
         try {
           const rows = await sql<{ id: string; scopes: string[] }[]>`
             SELECT id, scopes FROM engine_api_keys
@@ -49,7 +49,7 @@ export const requireResearchAuth = createMiddleware<{ Bindings: Env; Variables: 
           `
           if (rows[0]) {
             const key = rows[0]
-            bumpKeyLastUsed(c.env.DATABASE_URL, key.id)
+            bumpKeyLastUsed(c.env, key.id)
             c.set('authMethod', 'engine_key')
             c.set('apiKeyId', key.id)
             c.set('bridgeSub', null)
@@ -68,7 +68,7 @@ export const requireResearchAuth = createMiddleware<{ Bindings: Env; Variables: 
       if (bearer.includes('.') && c.env.SSO_JWKS_URL) {
         const claims = await verifyBridgeJwt(bearer, c.env.SSO_JWKS_URL, c.env.SSO_AUDIENCE)
         if (claims) {
-          const sql = getDb(c.env.DATABASE_URL)
+          const sql = getDb(c.env)
           try {
             // Look up or auto-provision simtrader user
             const identRows = await sql<{ userId: string }[]>`
@@ -136,7 +136,7 @@ export const requireResearchOrSession = createMiddleware<{ Bindings: Env; Variab
     if (sessionToken) {
       const session = await validateSession(c.env.KV, sessionToken)
       if (session) {
-        const sql = getDb(c.env.DATABASE_URL)
+        const sql = getDb(c.env)
         try {
           const rows = await sql<{ status: string; role: string }[]>`
             SELECT status, role FROM users WHERE id = ${session.userId}

@@ -18,6 +18,12 @@ binding = "KV"
 id = "REPLACE_WITH_KV_NAMESPACE_ID"
 preview_id = "REPLACE_WITH_KV_PREVIEW_NAMESPACE_ID"
 
+# Hyperdrive — reaches Postgres on vizneo-docker through a Cloudflare Tunnel gated by an
+# Access service token. Credentials live in the Hyperdrive config, not here.
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "215c6bce4b004ad899bc8e84b1eebca0"
+
 # Secrets — set via `wrangler secret put <NAME>` (never put in this file):
 #   DATABASE_URL          — postgresql://user:pass@host:5432/db
 #   TOKEN_ENCRYPTION_KEY  — 64 hex chars (32 random bytes), for Saxo token AES-256-GCM

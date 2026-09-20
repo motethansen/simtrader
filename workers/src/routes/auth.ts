@@ -50,7 +50,7 @@ auth.post('/login', async (c) => {
     return c.html(loginPage({ error: 'Invalid email or password.', redirectTo: null }), 401)
   }
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql<{ id: string; passwordHash: string; role: string; status: string }[]>`
       SELECT id, password_hash, role, status FROM users WHERE email = ${email}
@@ -113,7 +113,7 @@ auth.post('/signup', async (c) => {
     return c.html(signupPage({ error: 'Passwords do not match.' }), 400)
   }
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const existing = await sql`SELECT id FROM users WHERE email = ${email}`
     if (existing.length > 0) {
@@ -151,7 +151,7 @@ auth.post('/logout', async (c) => {
 // --- GET /me ---
 auth.get('/me', async (c) => {
   if (!c.var.userId) return c.json({ error: 'Unauthenticated' }, 401)
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql`
       SELECT id, email, role, status, email_verified, created_at, last_login_at

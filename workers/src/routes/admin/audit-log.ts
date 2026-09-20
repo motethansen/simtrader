@@ -13,7 +13,7 @@ auditLog.get('/', async (c) => {
   const from = c.req.query('from') ?? ''
   const to = c.req.query('to') ?? ''
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const where = sql`
       WHERE 1=1
@@ -59,7 +59,7 @@ auditLog.get('/export', async (c) => {
   const from = c.req.query('from') ?? ''
   const to = c.req.query('to') ?? ''
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql<{ action: string; ts: string; actorEmail: string | null; targetEmail: string | null; ipAddress: string | null; detail: string | null }[]>`
       SELECT

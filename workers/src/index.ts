@@ -28,7 +28,7 @@ app.get('/signup', (c) => c.redirect('/auth/signup'))
 
 // ---- User dashboard ----
 app.get('/dashboard', requireAuth, async (c) => {
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const [userRows, tokenRows] = await Promise.all([
       sql<{ email: string }[]>`SELECT email FROM users WHERE id = ${c.var.userId}`,
@@ -72,7 +72,7 @@ app.route('/research', researchRoutes)
 
 // Simple system health stub (full implementation in a later sprint)
 app.get('/admin/system', requireAdmin, async (c) => {
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const [dbCheck] = await sql<{ now: string }[]>`SELECT NOW()::text AS now`
     return c.json({

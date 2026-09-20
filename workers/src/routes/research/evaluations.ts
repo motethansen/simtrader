@@ -30,7 +30,7 @@ evaluations.post('/', requireResearchAuth, async (c) => {
     return c.json({ error: 'confidence must be between 0 and 1' }, 400)
   }
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     // Validate signal_id if provided
     if (signalId) {
@@ -59,7 +59,7 @@ evaluations.get('/', requireResearchOrSession, async (c) => {
   const limit = Math.min(parseInt(c.req.query('limit') ?? '50', 10), 200)
   const before = c.req.query('before') ?? null
 
-  const sql = getDb(c.env.DATABASE_URL)
+  const sql = getDb(c.env)
   try {
     const rows = await sql`
       SELECT id, signal_id, instrument_key, verdict, confidence, rationale,
