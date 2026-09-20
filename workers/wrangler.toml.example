@@ -6,6 +6,9 @@
 # our Cloudflare account, our KV and Hyperdrive resources, and the identity provider's
 # hostnames. None of them are credentials, but they describe live infrastructure, so they stay
 # on the development machines (synced privately) rather than in git.
+#
+# SIMTRADER_PUBLIC_URL must be the deployed origin exactly: it builds the redirect_uri, and the
+# identity provider matches that string character for character.
 
 name = "simtrader"
 main = "src/index.ts"
@@ -53,6 +56,11 @@ binding = "KV"
 id = "YOUR_STAGING_KV_ID"
 preview_id = "YOUR_STAGING_KV_PREVIEW_ID"
 
+# Environments do not inherit top-level bindings — each one needs its own.
+[[env.staging.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "YOUR_HYPERDRIVE_CONFIG_ID"
+
 [env.production]
 name = "simtrader-production"
 vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.example.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.example.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.example.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.example.com/connect", SIMTRADER_PUBLIC_URL = "https://YOUR_PRODUCTION_HOST" }
@@ -60,3 +68,8 @@ vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID =
 [[env.production.kv_namespaces]]
 binding = "KV"
 id = "YOUR_PRODUCTION_KV_ID"
+
+# Production gets its own Hyperdrive config (and its own database) when it exists.
+[[env.production.hyperdrive]]
+binding = "HYPERDRIVE"
+id = "YOUR_PRODUCTION_HYPERDRIVE_ID"

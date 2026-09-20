@@ -18,6 +18,20 @@ const app = new Hono<{ Bindings: Env; Variables: HonoVars }>()
 // Session middleware runs on every request
 app.use('*', sessionMiddleware)
 
+// Health check: unauthenticated on purpose, so uptime checks can reach it. It says whether
+// the database answered, and nothing else — no versions, no hostnames, no error text.
+app.get('/health', async (c) => {
+  const sql = getDb(c.env)
+  try {
+    await sql`SELECT 1`
+    return c.json({ ok: true, db: true, environment: c.env.ENVIRONMENT })
+  } catch {
+    return c.json({ ok: false, db: false, environment: c.env.ENVIRONMENT }, 503)
+  } finally {
+    await sql.end()
+  }
+})
+
 // ---- Public auth routes ----
 app.route('/auth', authRoutes)
 
