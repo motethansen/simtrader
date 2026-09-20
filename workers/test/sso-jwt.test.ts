@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { verifyIdToken, clearJwksCache, type IssuerConfig } from '../src/lib/sso-jwt'
 
-const ISSUER = 'https://api.budgetapp.vizneo.com'
+const ISSUER = 'https://api.budgetapp.example.com'
 const JWKS_URL = `${ISSUER}/.well-known/jwks.json`
 const AUDIENCE = 'simtrader'
 const KID = 'ba-test-1'

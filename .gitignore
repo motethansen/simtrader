@@ -21,6 +21,9 @@ data/
 
 # Workers local dev secrets (never commit)
 workers/.dev.vars
+# Names our Cloudflare account, KV/Hyperdrive resources and IdP hostnames — public repo.
+# Copy workers/wrangler.toml.example and keep the real file on the dev machines only.
+workers/wrangler.toml
 # Local `wrangler dev` state — holds whatever KV your dev session wrote, including session tokens
 workers/.wrangler/
 

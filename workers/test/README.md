@@ -10,6 +10,10 @@ Two ways to get one.
 token endpoint — signing with a throwaway key generated at startup. It is a test double, never
 a fallback: nothing outside this directory refers to it.
 
+First time on a machine: `cp workers/wrangler.toml.example workers/wrangler.toml` and fill in
+the account, KV, Hyperdrive and issuer values. That file is gitignored — this repo is public,
+so it lives on the development machines only.
+
 ```bash
 cd workers
 node test/fake-idp.mjs &                       # listens on :8901

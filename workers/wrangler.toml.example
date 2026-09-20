@@ -1,8 +1,17 @@
+# Template. Copy to wrangler.toml and fill in your own values:
+#
+#   cp wrangler.toml.example wrangler.toml
+#
+# wrangler.toml itself is gitignored on purpose. This repo is public, and the real file names
+# our Cloudflare account, our KV and Hyperdrive resources, and the identity provider's
+# hostnames. None of them are credentials, but they describe live infrastructure, so they stay
+# on the development machines (synced privately) rather than in git.
+
 name = "simtrader"
 main = "src/index.ts"
 compatibility_date = "2024-05-29"
 compatibility_flags = ["nodejs_compat"]
-account_id = "f999794776f99de37612b4abbfbfc21a"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"
 
 # Vars available in all environments (non-secret)
 [vars]
@@ -21,14 +30,14 @@ SIMTRADER_PUBLIC_URL = "http://localhost:8787"
 # Run `make workers-kv-create` to create these and paste the IDs below.
 [[kv_namespaces]]
 binding = "KV"
-id = "49f7d546350348a1b3850104dedc03f6"
-preview_id = "e262a928135941628ab88c5c062b5e1a"
+id = "YOUR_DEV_KV_ID"
+preview_id = "YOUR_DEV_KV_PREVIEW_ID"
 
 # Hyperdrive — reaches Postgres on vizneo-docker through a Cloudflare Tunnel gated by an
 # Access service token. Credentials live in the Hyperdrive config, not here.
 [[hyperdrive]]
 binding = "HYPERDRIVE"
-id = "215c6bce4b004ad899bc8e84b1eebca0"
+id = "YOUR_HYPERDRIVE_CONFIG_ID"
 
 # Secrets — set via `wrangler secret put <NAME>` (never put in this file):
 #   DATABASE_URL                 — fallback only; the Hyperdrive binding above is the real path
@@ -37,17 +46,17 @@ id = "215c6bce4b004ad899bc8e84b1eebca0"
 
 [env.staging]
 name = "simtrader-staging"
-vars = { ENVIRONMENT = "staging", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.vizneo.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.vizneo.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.vizneo.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.vizneo.com/connect", SIMTRADER_PUBLIC_URL = "https://simtrader-staging.REPLACE_WITH_WORKERS_SUBDOMAIN.workers.dev" }
+vars = { ENVIRONMENT = "staging", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.example.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.example.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.example.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.example.com/connect", SIMTRADER_PUBLIC_URL = "https://YOUR_STAGING_HOST" }
 
 [[env.staging.kv_namespaces]]
 binding = "KV"
-id = "de62d7ad926148d88a4583ddd2309f9a"
-preview_id = "426decefaa004fef9027697e9eceb994"
+id = "YOUR_STAGING_KV_ID"
+preview_id = "YOUR_STAGING_KV_PREVIEW_ID"
 
 [env.production]
 name = "simtrader-production"
-vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.vizneo.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.vizneo.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.vizneo.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.vizneo.com/connect", SIMTRADER_PUBLIC_URL = "https://REPLACE_WITH_PRODUCTION_HOST" }
+vars = { ENVIRONMENT = "production", SSO_AUDIENCE = "simtrader", SSO_CLIENT_ID = "simtrader", BUDGETAPP_ISSUER = "https://api.budgetapp.example.com", BUDGETAPP_JWKS_URL = "https://api.budgetapp.example.com/.well-known/jwks.json", BUDGETAPP_TOKEN_URL = "https://api.budgetapp.example.com/api/v1/sso/token", BUDGETAPP_CONNECT_URL = "https://budgetapp.example.com/connect", SIMTRADER_PUBLIC_URL = "https://YOUR_PRODUCTION_HOST" }
 
 [[env.production.kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_PRODUCTION_KV_NAMESPACE_ID"
+id = "YOUR_PRODUCTION_KV_ID"

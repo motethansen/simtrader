@@ -6,7 +6,7 @@ endif
 
 .PHONY: install dev test lint format demo up down \
         migrate migrate-status migrate-history seed-admin \
-        workers-install workers-dev workers-deploy workers-deploy-staging \
+        workers-config workers-install workers-dev workers-deploy workers-deploy-staging \
         workers-kv-create workers-secrets-put gen-encryption-key
 
 # --- Python ---
@@ -51,6 +51,11 @@ seed-admin:
 	tradingplatform seed-admin --budgetapp-id "$(SEED_ADMIN_BUDGETAPP_ID)"
 
 # --- Workers (Cloudflare) ---
+# wrangler.toml is gitignored (public repo). Copy the template before the first run.
+workers-config:
+	@test -f workers/wrangler.toml || cp workers/wrangler.toml.example workers/wrangler.toml
+	@echo "workers/wrangler.toml ready — fill in account, KV, Hyperdrive and issuer values"
+
 workers-install:
 	cd workers && npm install
 

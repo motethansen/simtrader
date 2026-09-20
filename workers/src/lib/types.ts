@@ -45,13 +45,13 @@ export interface Env {
   TOKEN_ENCRYPTION_KEY: string
   ENVIRONMENT: string
   // --- BudgetApp sign-in (ST-008). BudgetApp is the only identity provider. ---
-  /** Exact `iss` of BudgetApp ID tokens, e.g. https://api.budgetapp.vizneo.com */
+  /** Exact `iss` of BudgetApp ID tokens, e.g. https://api.budgetapp.example.com */
   BUDGETAPP_ISSUER: string
   /** Defaults to <issuer>/.well-known/jwks.json */
   BUDGETAPP_JWKS_URL: string
   /** Defaults to <issuer>/api/v1/sso/token */
   BUDGETAPP_TOKEN_URL: string
-  /** Browser-facing consent page, e.g. https://budgetapp.vizneo.com/connect */
+  /** Browser-facing consent page, e.g. https://budgetapp.example.com/connect */
   BUDGETAPP_CONNECT_URL: string
   /** simtrader's own origin, used to build the exact registered redirect_uri */
   SIMTRADER_PUBLIC_URL: string
