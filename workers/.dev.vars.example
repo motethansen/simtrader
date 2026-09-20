@@ -1,4 +1,14 @@
 # Copy to .dev.vars for local wrangler dev (never commit .dev.vars)
-DATABASE_URL=postgresql://tp:tp@localhost:5432/tradingplatform
+# Only secrets belong here. Non-secret settings (issuer, connect URL, public URL) live in
+# wrangler.toml; see workers/test/README.md for running the sign-in flow locally.
+
+# Secret half of the `simtrader` client registered in BudgetApp's sso_clients.
+# Any non-empty value works against the test-double provider in test/fake-idp.mjs.
+SIMTRADER_SSO_CLIENT_SECRET=dev-secret
+
+# Saxo token vault master key (W2). 64 hex chars = 32 bytes; this placeholder is not a key.
 TOKEN_ENCRYPTION_KEY=0000000000000000000000000000000000000000000000000000000000000000
+
+# Fallback database URL, used only when the Hyperdrive binding is absent.
+DATABASE_URL=postgresql://tp:tp@localhost:5432/tradingplatform
 ENVIRONMENT=development
