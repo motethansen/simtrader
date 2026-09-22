@@ -28,7 +28,16 @@ export interface IdTokenClaims {
   email?: string
   email_verified?: boolean
   name?: string
+  /** Identity events only (ST-f): which lifecycle event this is. Never present in an ID token. */
+  event?: string
 }
+
+/**
+ * The `typ` header BudgetApp puts on identity events (BA-166 / ST-f). One key signs both ID
+ * tokens and events, so the header is what keeps them apart: the event receiver requires it,
+ * and ID-token verification refuses it.
+ */
+export const IDENTITY_EVENT_TYP = 'identity-event'
 
 export type SignatureAlg = 'ES256' | 'RS256'
 
@@ -45,6 +54,7 @@ export interface IssuerConfig {
 
 export type VerifyFailure =
   | 'malformed'
+  | 'typ_mismatch'
   | 'alg_not_allowed'
   | 'issuer_mismatch'
   | 'audience_mismatch'
@@ -166,6 +176,13 @@ function parseJwtParts(token: string): ParsedJwt | null {
 export interface VerifyOptions {
   /** When set, the token's `nonce` must equal this exactly. */
   nonce?: string
+  /**
+   * When set, the header `typ` must equal this exactly — the event receiver passes
+   * IDENTITY_EVENT_TYP. When unset, the token is being verified as an ID token, and a token
+   * labelled as an identity event is refused: it is a signed statement *about* a member, not a
+   * sign-in *by* one.
+   */
+  typ?: string
   /** Override "now" (seconds since epoch). Tests only. */
   now?: number
 }
@@ -182,6 +199,10 @@ export async function verifyIdToken(
   const now = options.now ?? Math.floor(Date.now() / 1000)
 
   // --- Claims first: cheap, and they decide which key we are even allowed to use ---
+  const typ = header['typ']
+  if (options.typ !== undefined ? typ !== options.typ : typ === IDENTITY_EVENT_TYP) {
+    return { ok: false, reason: 'typ_mismatch' }
+  }
   if ((header['alg'] ?? '') !== config.alg) return { ok: false, reason: 'alg_not_allowed' }
   if (payload.iss !== config.issuer) return { ok: false, reason: 'issuer_mismatch' }
 
