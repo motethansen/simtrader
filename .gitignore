@@ -19,6 +19,19 @@ data/
 *.sqlite
 .DS_Store
 
+# Private key material, anywhere in the tree — added 2026-09-20.
+#
+# A P-256 signing key for BudgetApp's SSO was found here untracked and UNIGNORED,
+# which in a public repository is one `git add .` from publishing it. It had never
+# been committed, so nothing was exposed — but the near miss is the reason for a
+# rule rather than a habit. simtrader needs no private keys of its own: it verifies
+# BudgetApp's tokens against the PUBLIC half at BUDGETAPP_JWKS_URL, and its own
+# secrets go in workers/.dev.vars or `wrangler secret put`.
+*.pem
+*.key
+*.p8
+*.p12
+
 # Workers local dev secrets (never commit)
 workers/.dev.vars
 # Names our Cloudflare account, KV/Hyperdrive resources and IdP hostnames — public repo.
