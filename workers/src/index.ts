@@ -10,6 +10,7 @@ import adminDashboard from './routes/admin/index'
 import adminUsers from './routes/admin/users'
 import adminAuditLog from './routes/admin/audit-log'
 import researchRoutes from './routes/research/index'
+import identityEvents from './routes/identity-events'
 
 import { dashboardPage } from './ui/dashboard'
 
@@ -34,6 +35,10 @@ app.get('/health', async (c) => {
 
 // ---- Public auth routes ----
 app.route('/auth', authRoutes)
+
+// ---- Identity events from BudgetApp (ST-f) ----
+// Server to server. The signed body is the authentication; see routes/identity-events.ts.
+app.route('/internal', identityEvents)
 
 // Convenience redirects. There is no sign-up: an account is created on first BudgetApp
 // sign-in, so /signup goes to the same place as /login (ST-008).
