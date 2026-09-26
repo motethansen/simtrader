@@ -1,4 +1,5 @@
 import { css } from './base'
+import { esc } from './portfolios'
 
 const userLayout = (email: string, content: string) => `<!DOCTYPE html>
 <html lang="en">
@@ -40,18 +41,53 @@ interface TokenStatus {
   expiresAt: string | null
 }
 
-export function dashboardPage(opts: { email: string; token: TokenStatus }): string {
+export interface DashboardPortfolio {
+  id: string
+  name: string
+  baseCurrency: string
+  holdingCount: number
+}
+
+// Nothing on this page links to a route that does not exist. It used to offer *Connect Saxo*,
+// *New portfolio* and *Run simulation*, and all three were 404s — which nobody noticed while
+// BudgetApp had no way in. Once *Launch simtrader* shipped (BA-165, live 2026-09-25) they were the
+// first thing a member would click. Portfolios are real now; the other two say what they are
+// waiting for instead of pretending to be ready.
+export function dashboardPage(opts: {
+  email: string
+  token: TokenStatus
+  portfolios?: DashboardPortfolio[]
+}): string {
   const tokenCard = opts.token.active
     ? `<p class="token-active">✓ Active</p>
-       <p style="color:var(--muted);font-size:12px;margin-top:.25rem">Expires ${new Date(opts.token.expiresAt!).toLocaleString()}</p>
-       <div style="margin-top:1rem;display:flex;gap:.5rem">
-         <a href="/saxo/token" class="btn btn-ghost btn-sm">Update token</a>
-       </div>`
-    : `<p class="token-expired">No active token</p>
-       <p style="color:var(--muted);font-size:12px;margin-top:.25rem">Submit your Saxo 24h dev token to connect your account.</p>
-       <div style="margin-top:1rem">
-         <a href="/saxo/token" class="btn btn-primary btn-sm">Connect Saxo</a>
-       </div>`
+       <p style="color:var(--muted);font-size:12px;margin-top:.25rem">Expires ${new Date(opts.token.expiresAt!).toLocaleString()}</p>`
+    : `<p class="token-expired">Not connected</p>
+       <p style="color:var(--muted);font-size:12px;margin-top:.25rem">
+         Connecting a Saxo account needs the encrypted token vault (W2), which is not built yet.
+         Your token would have to be decrypted somewhere it can be kept safe, and that tier does
+         not exist — so there is deliberately nothing here to submit.
+       </p>`
+
+  const portfolios = opts.portfolios ?? []
+  const portfolioList =
+    portfolios.length === 0
+      ? `<div class="empty-state">
+           <div class="icon">📁</div>
+           <p>No portfolios yet.</p>
+           <a href="/portfolios/new" class="btn btn-primary btn-sm" style="margin-top:.75rem">Create one</a>
+         </div>`
+      : `<table>
+           <thead><tr><th>Name</th><th>Currency</th><th style="text-align:right">Holdings</th></tr></thead>
+           <tbody>${portfolios
+             .map(
+               (p) => `<tr>
+                 <td><a href="/portfolios/${esc(p.id)}">${esc(p.name)}</a></td>
+                 <td>${esc(p.baseCurrency)}</td>
+                 <td style="text-align:right">${esc(p.holdingCount)}</td>
+               </tr>`,
+             )
+             .join('')}</tbody>
+         </table>`
 
   return userLayout(opts.email, `
     <div class="page-header">
@@ -65,27 +101,28 @@ export function dashboardPage(opts: { email: string; token: TokenStatus }): stri
       </div>
       <div class="card">
         <div style="font-weight:700;margin-bottom:.75rem">Quick actions</div>
-        <div style="display:flex;flex-direction:column;gap:.5rem">
-          <a href="/portfolios/new" class="btn btn-ghost btn-sm">+ New portfolio</a>
-          <a href="/simulations/new" class="btn btn-ghost btn-sm">+ Run simulation</a>
+        <div style="display:flex;flex-direction:column;gap:.5rem;align-items:flex-start">
+          <a href="/portfolios/new" class="btn btn-primary btn-sm">+ New portfolio</a>
+          <a href="/portfolios" class="btn btn-ghost btn-sm">All portfolios</a>
         </div>
       </div>
     </div>
 
     <div class="card" style="margin-bottom:1rem">
-      <div style="font-weight:700;margin-bottom:.75rem">Portfolios</div>
-      <div class="empty-state">
-        <div class="icon">📁</div>
-        <p>No portfolios yet.</p>
-        <a href="/portfolios/new" class="btn btn-primary btn-sm" style="margin-top:.75rem">Upload portfolio</a>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem">
+        <div style="font-weight:700">Portfolios</div>
+        ${portfolios.length > 0 ? `<a href="/portfolios" style="font-size:12px">View all</a>` : ''}
       </div>
+      ${portfolioList}
     </div>
 
     <div class="card">
-      <div style="font-weight:700;margin-bottom:.75rem">Recent simulations</div>
+      <div style="font-weight:700;margin-bottom:.75rem">Simulations</div>
       <div class="empty-state">
         <div class="icon">📊</div>
-        <p>No simulations run yet.</p>
+        <p>Simulations arrive with W5.</p>
+        <p style="font-size:12px">They need the backtester to run against real market data (M1) before a
+           result here would mean anything.</p>
       </div>
     </div>
   `)
