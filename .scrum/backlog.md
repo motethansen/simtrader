@@ -85,19 +85,22 @@ The W-series is the primary product direction. M-series milestones are prerequis
 
 **Prerequisites**: W1.
 
-- [ ] Postgres tables:
-  - `portfolios` — `id`, `user_id`, `name`, `created_at`, `starting_cash`, `currency`
+- [x] Postgres tables:
+  - `portfolios` — `id`, `user_id`, `name`, `created_at`, `starting_cash`, `base_currency`
   - `holdings` — `id`, `portfolio_id`, `symbol`, `mic`, `units`, `avg_cost`, `currency`
-- [ ] Alembic migrations
-- [ ] `POST /portfolios` — create portfolio with name + starting_cash
-- [ ] `POST /portfolios/:id/holdings/upload` — accepts CSV: `symbol,mic,units,avg_cost,currency`
-- [ ] `POST /portfolios/:id/holdings` — manual single-holding entry
-- [ ] `GET /portfolios/:id/holdings` — list holdings
-- [ ] `PUT /portfolios/:id/holdings/:hid` — edit units/avg_cost
-- [ ] `DELETE /portfolios/:id/holdings/:hid`
-- [ ] UI: upload form + editable holdings table
-- [ ] CSV template download: `GET /portfolios/template.csv`
-- [ ] Input validation: symbol format, positive units/cost, recognised currency codes
+- [x] Alembic migrations — `0013_portfolios`, both tables cascading from `users` so ST-f erasure reaches them
+- [x] `POST /portfolios` — create portfolio with name + starting_cash
+- [x] `POST /portfolios/:id/holdings/upload` — accepts CSV: `symbol,mic,units,avg_cost,currency`
+- [x] `POST /portfolios/:id/holdings` — manual single-holding entry
+- [x] `GET /portfolios/:id` — portfolio with its holdings (not `/holdings` on its own: there is no
+      caller for a bare list, and the page needs the portfolio anyway)
+- [x] `POST /portfolios/:id/holdings/:hid/update` — edit units/avg_cost. **Not `PUT`**: these are
+      plain HTML forms and a browser form can only GET or POST
+- [x] `POST /portfolios/:id/holdings/:hid/delete` — same reason
+- [x] UI: upload form + editable holdings table
+- [x] CSV template download: `GET /portfolios/template.csv`
+- [x] Input validation: symbol format, positive units/cost, recognised currency codes —
+      `workers/src/lib/holdings-csv.ts`, 23 tests, and the same rules again as DB check constraints
 
 ---
 

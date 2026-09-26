@@ -11,6 +11,7 @@ import adminUsers from './routes/admin/users'
 import adminAuditLog from './routes/admin/audit-log'
 import researchRoutes from './routes/research/index'
 import identityEvents from './routes/identity-events'
+import portfolioRoutes from './routes/portfolios'
 
 import { dashboardPage } from './ui/dashboard'
 
@@ -40,6 +41,9 @@ app.route('/auth', authRoutes)
 // Server to server. The signed body is the authentication; see routes/identity-events.ts.
 app.route('/internal', identityEvents)
 
+// Portfolios (W3). Mounted before the admin guard below, which only covers /admin/*.
+app.route('/portfolios', portfolioRoutes)
+
 // Convenience redirects. There is no sign-up: an account is created on first BudgetApp
 // sign-in, so /signup goes to the same place as /login (ST-008).
 app.get('/', (c) => c.redirect(c.var.userId ? '/dashboard' : '/auth/budgetapp/start'))
@@ -60,11 +64,20 @@ app.get('/goodbye', (c) =>
 app.get('/dashboard', requireAuth, async (c) => {
   const sql = getDb(c.env)
   try {
-    const [userRows, tokenRows] = await Promise.all([
+    const [userRows, tokenRows, portfolioRows] = await Promise.all([
       sql<{ email: string }[]>`SELECT email FROM users WHERE id = ${c.var.userId}`,
       sql<{ expiresAt: string }[]>`
         SELECT expires_at FROM saxo_tokens
         WHERE user_id = ${c.var.userId} AND expires_at > NOW()
+      `,
+      sql<{ id: string; name: string; baseCurrency: string; holdingCount: number }[]>`
+        SELECT p.id, p.name, p.base_currency, COUNT(h.id)::int AS holding_count
+        FROM portfolios p
+        LEFT JOIN holdings h ON h.portfolio_id = p.id
+        WHERE p.user_id = ${c.var.userId}
+        GROUP BY p.id
+        ORDER BY p.created_at DESC
+        LIMIT 5
       `,
     ])
     const email = userRows[0]?.email ?? ''
@@ -72,6 +85,7 @@ app.get('/dashboard', requireAuth, async (c) => {
     return c.html(dashboardPage({
       email,
       token: { active: !!token, expiresAt: token?.expiresAt ?? null },
+      portfolios: portfolioRows,
     }))
   } finally {
     await sql.end()
